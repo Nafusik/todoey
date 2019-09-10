@@ -7,12 +7,15 @@
 //
 
 import UIKit
+import CoreData
 
 class TodoListViewController: UITableViewController {
 
     var itemArray  = [Item]()
 //    let defaults = UserDefaults.standard
     let dataFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("Items.plist")
+    
+    let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
     
     
     override func viewDidLoad() {
@@ -72,9 +75,9 @@ class TodoListViewController: UITableViewController {
        
         let action = UIAlertAction(title: "Add Item", style: .default) { (action) in
             
-            let newItem = Item()
+            let newItem = Item(context: self.context)
             newItem.title = textField.text!
-            
+            newItem.done = false
             // What will happen once the user clicks the Add Item button on our UIAlert
             self.itemArray.append(newItem)
             
@@ -96,29 +99,25 @@ class TodoListViewController: UITableViewController {
     
     //MARK - Model Manupulation Methods
     func saveItems(){
-        let encoder = PropertyListEncoder()
         do {
-            let data = try encoder.encode(itemArray)
-            try data.write(to: dataFilePath!)
+            try context.save()
         }
         catch {
-            print("Error encoding item array, \(error)")
+            print("ERror saving context \(error)")
         }
         tableView.reloadData()
     }
     
     func loadItems(){
-        if let data = try? Data(contentsOf: dataFilePath!){
-            let decoder = PropertyListDecoder()
-            
-            do {
-                try itemArray = decoder.decode([Item].self, from: data)
-            }
-            catch {
-                print("another error \(error)")
-            }
-            
+        let request : NSFetchRequest<Item> = Item.fetchRequest()
+        
+        do {
+            itemArray = try context.fetch(request)
         }
+        catch{
+            print("Error loading and fetching data from context \(error)")
+        }
+        
     }
     
 
